@@ -3,12 +3,19 @@ import {
   BookOpen, Play, CheckCircle2, Crown, Award, Flame, Search,
   ChevronRight, ChevronDown, Sparkles, Plus, Upload, Download,
   Trash2, Eye, Code, HelpCircle, RotateCcw, ArrowLeft,
-  PenTool, Copy, Check, Video, FileCheck, AlertCircle, CheckSquare
+  PenTool, Copy, Check, Video, Users, Globe, Lock, Cloud,
+  RefreshCw, UserPlus, LogIn, Shield
 } from 'lucide-react';
 
 // ============================================================================
+// OPTIONAL: Paste your free Supabase URL & Anon Key here so EVERY visitor on
+// your Vercel link automatically connects to the cloud without typing keys!
+// ============================================================================
+const DEFAULT_SUPABASE_URL = ""; 
+const DEFAULT_SUPABASE_ANON_KEY = "";
+
+// ============================================================================
 // 1. PURE CONTENT SCHEMA (Vaaler / Artin M 373K Outline + M 367K + M 365C)
-// Zero progress fields live inside INITIAL_COURSES so re-importing never wipes progress.
 // ============================================================================
 const INITIAL_COURSES = [
   {
@@ -222,7 +229,7 @@ const INITIAL_COURSES = [
 ];
 
 // ============================================================================
-// 2. KATEX MATH RENDERER (No script leaks — uses single global KaTeX in index.html)
+// 2. KATEX MATH RENDERER
 // ============================================================================
 function MathText({ text, block = false, className = "" }) {
   const containerRef = useRef(null);
@@ -239,7 +246,6 @@ function MathText({ text, block = false, className = "" }) {
         return;
       }
 
-      // Pure display mode when block=true and no $ delimiters exist
       if (block && !str.includes("$")) {
         try {
           window.katex.render(str, el, { displayMode: true, throwOnError: false });
@@ -250,7 +256,6 @@ function MathText({ text, block = false, className = "" }) {
         }
       }
 
-      // Parse both $$...$$ and $...$ inline segments
       const parts = str.split(/(\$\$[\s\S]+?\$\$|\$[^$]+?\$)/g);
       el.innerHTML = "";
       parts.forEach((part) => {
@@ -292,7 +297,7 @@ function MathText({ text, block = false, className = "" }) {
 }
 
 // ============================================================================
-// 3. CLAUDE PROMPT GENERATOR (String.raw guarantees valid double-escaped JSON!)
+// 3. CLAUDE PROMPT GENERATOR (Double-escaped valid JSON)
 // ============================================================================
 const getClaudePrompt = (targetCourseId = "m373k") => String.raw`You are an expert pure mathematics professor authoring course content for Axiom Academy ("M 373K: Algebraic Structures I", Vaaler / Artin syllabus).
 
@@ -302,9 +307,9 @@ CRITICAL JSON & LATEX ESCAPING RULES:
    - Write "\\frac{a}{b}", "\\times", "\\text{im}(\\varphi)", "\\neq", "\\blacksquare", "\\subseteq", "\\trianglelefteq", "\\mathbb{Z}/n\\mathbb{Z}".
 3. Wrap all inline math in $...$ inside titles, captions, questions, options, optionExplanations, hints, rubric, and modelProof (e.g., "$A_4$", "$p^2$", "$\\Phi_a$ is a bijection").
 4. In each step's "math" field, write pure double-escaped LaTeX WITHOUT $ delimiters.
-5. Do NOT include any user progress fields (no earnedPoints, completed, or mastery fields).
+5. Do NOT include any user progress fields.
 
-VALID JSON SCHEMA EXAMPLE (Passes JSON.parse directly):
+VALID JSON SCHEMA EXAMPLE:
 {
   "targetCourseId": "${targetCourseId}",
   "unit": {
@@ -324,12 +329,6 @@ VALID JSON SCHEMA EXAMPLE (Passes JSON.parse directly):
             "label": "Correspondence Between Ideals of R/M and Ideals Containing M",
             "math": "M \\subseteq I \\subseteq R \\iff \\bar{I} = I/M \\text{ is an ideal of } R/M",
             "caption": "By the Lattice Isomorphism Theorem for rings, ideals of $R/M$ correspond bijectively to ideals $I$ of $R$ satisfying $M \\subseteq I \\subseteq R$."
-          },
-          {
-            "time": "07:30",
-            "label": "Field Criterion via Non-Zero Ideals",
-            "math": "R/M \\text{ is a field} \\iff \\text{only ideals of } R/M \\text{ are } (\\bar{0}) \\text{ and } R/M \\quad \\blacksquare",
-            "caption": "A commutative ring with $1 \\neq 0$ is a field iff its only ideals are $(0)$ and the whole ring. Thus $R/M$ is a field iff no proper ideal $I$ strictly sits between $M$ and $R$."
           }
         ],
         "exercises": [
@@ -345,33 +344,14 @@ VALID JSON SCHEMA EXAMPLE (Passes JSON.parse directly):
             ],
             "correctIndex": 0,
             "optionExplanations": [
-              "Correct! By the First Isomorphism Theorem for rings, $\\mathbb{Z}[x]/(x) \\cong \\mathbb{Z}$, which is an integral domain (so $(x)$ is prime) but not a field (so $(x)$ is not maximal; e.g. $(x) \\subsetneq (2, x) \\subsetneq \\mathbb{Z}[x]$).",
-              "Incorrect: $\\mathbb{Z}[x]/(x) \\cong \\mathbb{Z}$ is not a field because $2 \\in \\mathbb{Z}$ has no multiplicative inverse.",
-              "Incorrect: Every maximal ideal in a commutative ring with $1$ is automatically prime.",
-              "Incorrect: Since $\\mathbb{Z}$ is an integral domain, $(x)$ is a prime ideal."
+              "Correct! $\\mathbb{Z}[x]/(x) \\cong \\mathbb{Z}$ is an integral domain but not a field.",
+              "Incorrect: $\\mathbb{Z}$ is not a field.",
+              "Incorrect: Every maximal ideal is prime.",
+              "Incorrect: $\\mathbb{Z}$ is a domain so $(x)$ is prime."
             ],
             "hints": [
-              "Evaluate the quotient ring $\\mathbb{Z}[x]/(x)$ using the evaluation homomorphism $\\text{ev}_0(f(x)) = f(0)$.",
-              "Note that $\\mathbb{Z}[x]/(x) \\cong \\mathbb{Z}$.",
-              "Is $\\mathbb{Z}$ an integral domain? Is $\\mathbb{Z}$ a field?"
+              "Evaluate $\\mathbb{Z}[x]/(x)$ via $f(x) \\mapsto f(0)$."
             ]
-          },
-          {
-            "id": "ex-max-2",
-            "type": "proof",
-            "question": "Prove that every finite integral domain $D$ is a field.",
-            "hints": [
-              "Let $a \\in D$ with $a \\neq 0$, and consider the left-multiplication map $\\lambda_a : D \\to D$ given by $\\lambda_a(x) = ax$.",
-              "Use the cancellation property in an integral domain to prove $\\lambda_a$ is injective.",
-              "Since $D$ is a finite set, what does injectivity of $\\lambda_a : D \\to D$ imply about surjectivity?"
-            ],
-            "rubric": [
-              "Fix a non-zero element $a \\in D \\setminus \\{0\\}$ and define $\\lambda_a : D \\to D$ by $\\lambda_a(x) = ax$.",
-              "Prove $\\lambda_a$ is injective: if $ax = ay$, then $a(x - y) = 0$; since $D$ is an integral domain and $a \\neq 0$, conclude $x = y$.",
-              "Invoke the Pigeonhole Principle: any injective map from a finite set $D$ to itself is surjective.",
-              "Since $1 \\in D$ is in the image of $\\lambda_a$, conclude there exists $b \\in D$ such that $ab = 1$, so $a$ is a unit and $D$ is a field."
-            ],
-            "modelProof": "Let $D$ be a finite integral domain and let $a \\in D$ with $a \\neq 0$. Define the map $\\lambda_a : D \\to D$ by $\\lambda_a(x) = ax$. Suppose $\\lambda_a(x) = \\lambda_a(y)$; then $ax = ay \\implies a(x - y) = 0$. Since $D$ has no zero divisors and $a \\neq 0$, we have $x - y = 0$, so $x = y$ and $\\lambda_a$ is injective. Because $D$ is a finite set, any injective map $\\lambda_a : D \\to D$ is also surjective. In particular, $1 \\in D$ lies in the image of $\\lambda_a$, so there exists $b \\in D$ such that $ab = \\lambda_a(b) = 1$. Thus every non-zero element of $D$ has a multiplicative inverse, proving $D$ is a field. $\\blacksquare$"
           }
         ]
       }
@@ -380,10 +360,39 @@ VALID JSON SCHEMA EXAMPLE (Passes JSON.parse directly):
 }`;
 
 // ============================================================================
-// 4. MAIN APPLICATION COMPONENT
+// 4. SUPABASE SQL SETUP SCRIPT (For 1-Click Copy in Cloud Settings)
+// ============================================================================
+const SUPABASE_SQL_SCRIPT = `-- Run this once in your Supabase SQL Editor to enable cross-device profiles & cloud courses:
+
+create table if not exists public.axiom_profiles (
+  handle text primary key,
+  display_name text not null,
+  pin text not null default '0000',
+  is_public boolean not null default true,
+  progress jsonb not null default '{"exercises":{},"points":0,"streakDays":0}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.axiom_courses (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.axiom_profiles enable row level security;
+alter table public.axiom_courses enable row level security;
+
+create policy "Allow public access to profiles" on public.axiom_profiles
+  for all using (true) with check (true);
+
+create policy "Allow public access to courses" on public.axiom_courses
+  for all using (true) with check (true);`;
+
+// ============================================================================
+// 5. MAIN APPLICATION COMPONENT
 // ============================================================================
 export default function App() {
-  // Courses state (Pure content only)
+  // Courses state
   const [courses, setCourses] = useState(() => {
     const saved = localStorage.getItem("axiom_courses_v2");
     if (saved) {
@@ -396,24 +405,95 @@ export default function App() {
     return INITIAL_COURSES;
   });
 
-  // Separate Progress state (Never overwritten when courses update!)
-  // Structure: { exercises: { [exId]: { level: 'mastered'|'familiar', attempts: 1 } }, points: 0, activeDays: [] }
-  const [progress, setProgress] = useState(() => {
-    const saved = localStorage.getItem("axiom_progress_v2");
+  // Cloud configuration (Supabase URL & Key)
+  const [cloudConfig, setCloudConfig] = useState(() => {
+    const saved = localStorage.getItem("axiom_cloud_config_v1");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.url && parsed.anonKey) return parsed;
+      } catch {}
+    }
+    return {
+      url: DEFAULT_SUPABASE_URL,
+      anonKey: DEFAULT_SUPABASE_ANON_KEY
+    };
+  });
+
+  const isCloudConfigured = Boolean(
+    cloudConfig.url?.trim() && cloudConfig.anonKey?.trim()
+  );
+
+  // Multi-Profile Directory stored locally & synced with Supabase when configured
+  const [profilesMap, setProfilesMap] = useState(() => {
+    const saved = localStorage.getItem("axiom_profiles_map_v1");
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch {
-        return { exercises: {}, points: 0, streakDays: 0 };
-      }
+      } catch {}
     }
-    return { exercises: {}, points: 0, streakDays: 0 };
+    // Migrate any single-user progress from v2
+    const legacyProgress = localStorage.getItem("axiom_progress_v2");
+    let initialProg = { exercises: {}, points: 0, streakDays: 0 };
+    if (legacyProgress) {
+      try {
+        initialProg = JSON.parse(legacyProgress);
+      } catch {}
+    }
+    return {
+      joseph: {
+        handle: "joseph",
+        displayName: "Joseph",
+        pin: "0000",
+        isPublic: true,
+        progress: initialProg,
+        updatedAt: Date.now()
+      }
+    };
   });
 
-  const [activeView, setActiveView] = useState("dashboard"); // "dashboard" | "course" | "lesson" | "studio"
+  const [activeHandle, setActiveHandle] = useState(() => {
+    return localStorage.getItem("axiom_active_handle_v1") || "joseph";
+  });
+
+  const [publicLeaderboard, setPublicLeaderboard] = useState([]);
+  const [syncStatus, setSyncStatus] = useState("");
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Profile Modal Form State
+  const [profileMode, setProfileMode] = useState("switch"); // "switch" | "create" | "cloud-login" | "cloud-setup"
+  const [newHandle, setNewHandle] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [newIsPublic, setNewIsPublic] = useState(true);
+  const [profileModalMsg, setProfileModalMsg] = useState(null);
+  const [copiedSql, setCopiedSql] = useState(false);
+
+  // Active Profile & Progress
+  const activeProfile = useMemo(() => {
+    return (
+      profilesMap[activeHandle] ||
+      Object.values(profilesMap)[0] || {
+        handle: "scholar",
+        displayName: "Scholar",
+        pin: "0000",
+        isPublic: true,
+        progress: { exercises: {}, points: 0, streakDays: 0 }
+      }
+    );
+  }, [profilesMap, activeHandle]);
+
+  const progress = activeProfile.progress || {
+    exercises: {},
+    points: 0,
+    streakDays: 0
+  };
+
+  // Navigation & Lesson State
+  const [activeView, setActiveView] = useState("dashboard"); // "dashboard" | "course" | "lesson" | "studio" | "leaderboard"
   const [selectedCourseId, setSelectedCourseId] = useState("m373k");
   const [selectedLesson, setSelectedLesson] = useState(null);
-  const [lessonTab, setLessonTab] = useState("blackboard"); // "blackboard" | "exercises"
+  const [lessonTab, setLessonTab] = useState("blackboard");
   const [activeStepIdx, setActiveStepIdx] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [coursesMenuOpen, setCoursesMenuOpen] = useState(false);
@@ -441,28 +521,191 @@ export default function App() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [penColor, setPenColor] = useState("#1d4ed8");
 
+  // Save local state
   useEffect(() => {
     localStorage.setItem("axiom_courses_v2", JSON.stringify(courses));
   }, [courses]);
 
   useEffect(() => {
-    localStorage.setItem("axiom_progress_v2", JSON.stringify(progress));
-  }, [progress]);
+    localStorage.setItem("axiom_profiles_map_v1", JSON.stringify(profilesMap));
+  }, [profilesMap]);
+
+  useEffect(() => {
+    localStorage.setItem("axiom_active_handle_v1", activeHandle);
+  }, [activeHandle]);
+
+  useEffect(() => {
+    localStorage.setItem("axiom_cloud_config_v1", JSON.stringify(cloudConfig));
+  }, [cloudConfig]);
+
+  // ==========================================================================
+  // SUPABASE REST API HELPERS (Zero npm dependencies required!)
+  // ==========================================================================
+  const getHeaders = (extra = {}) => ({
+    apikey: cloudConfig.anonKey.trim(),
+    Authorization: `Bearer ${cloudConfig.anonKey.trim()}`,
+    "Content-Type": "application/json",
+    ...extra
+  });
+
+  // Push a profile to Supabase Cloud
+  const pushProfileToCloud = async (prof) => {
+    if (!isCloudConfigured || !prof) return;
+    try {
+      setSyncStatus("Syncing...");
+      const baseUrl = cloudConfig.url.trim().replace(/\/$/, "");
+      await fetch(`${baseUrl}/rest/v1/axiom_profiles`, {
+        method: "POST",
+        headers: getHeaders({ Prefer: "resolution=merge-duplicates" }),
+        body: JSON.stringify({
+          handle: prof.handle,
+          display_name: prof.displayName,
+          pin: prof.pin || "0000",
+          is_public: Boolean(prof.isPublic),
+          progress: prof.progress || { exercises: {}, points: 0, streakDays: 0 },
+          updated_at: new Date().toISOString()
+        })
+      });
+      setSyncStatus("Cloud Synced ✓");
+      fetchPublicLeaderboard();
+    } catch {
+      setSyncStatus("Offline (Local Saved)");
+    }
+  };
+
+  // Pull a profile from Supabase Cloud (for logging in on phone / another laptop)
+  const pullProfileFromCloud = async (handleInput, pinInput) => {
+    if (!isCloudConfigured) {
+      setProfileModalMsg({
+        type: "error",
+        text: "Connect your Supabase URL & Anon Key in the 'Cloud Sync Setup' tab first."
+      });
+      return;
+    }
+    try {
+      const cleanHandle = handleInput.trim().toLowerCase();
+      const baseUrl = cloudConfig.url.trim().replace(/\/$/, "");
+      const res = await fetch(
+        `${baseUrl}/rest/v1/axiom_profiles?handle=eq.${encodeURIComponent(cleanHandle)}&select=*`,
+        { headers: getHeaders() }
+      );
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        setProfileModalMsg({
+          type: "error",
+          text: `No cloud profile found with handle "@${cleanHandle}".`
+        });
+        return;
+      }
+      const remote = data[0];
+      if (String(remote.pin) !== String(pinInput).trim()) {
+        setProfileModalMsg({
+          type: "error",
+          text: "Incorrect 4-digit PIN for this profile."
+        });
+        return;
+      }
+      const loadedProfile = {
+        handle: remote.handle,
+        displayName: remote.display_name,
+        pin: remote.pin,
+        isPublic: remote.is_public,
+        progress: remote.progress || { exercises: {}, points: 0, streakDays: 0 },
+        updatedAt: Date.now()
+      };
+      setProfilesMap((prev) => ({ ...prev, [loadedProfile.handle]: loadedProfile }));
+      setActiveHandle(loadedProfile.handle);
+      setProfileModalMsg({
+        type: "success",
+        text: `Synced @${loadedProfile.handle} from the cloud!`
+      });
+    } catch (err) {
+      setProfileModalMsg({
+        type: "error",
+        text: `Cloud error: ${err.message}`
+      });
+    }
+  };
+
+  // Fetch all public profiles for the Scholar Directory & Leaderboard
+  const fetchPublicLeaderboard = async () => {
+    if (!isCloudConfigured) return;
+    try {
+      const baseUrl = cloudConfig.url.trim().replace(/\/$/, "");
+      const res = await fetch(
+        `${baseUrl}/rest/v1/axiom_profiles?is_public=eq.true&select=handle,display_name,is_public,progress,updated_at`,
+        { headers: getHeaders() }
+      );
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setPublicLeaderboard(
+          data.map((row) => ({
+            handle: row.handle,
+            displayName: row.display_name,
+            isPublic: row.is_public,
+            progress: row.progress || { exercises: {}, points: 0, streakDays: 0 },
+            updatedAt: row.updated_at
+          }))
+        );
+      }
+    } catch {}
+  };
+
+  // Push & Pull Courses from Cloud so Claude imports appear on all devices!
+  const pushCoursesToCloud = async (updatedCourses) => {
+    if (!isCloudConfigured) return;
+    try {
+      const baseUrl = cloudConfig.url.trim().replace(/\/$/, "");
+      await fetch(`${baseUrl}/rest/v1/axiom_courses`, {
+        method: "POST",
+        headers: getHeaders({ Prefer: "resolution=merge-duplicates" }),
+        body: JSON.stringify({
+          id: "master_curriculum",
+          data: updatedCourses,
+          updated_at: new Date().toISOString()
+        })
+      });
+      setSyncStatus("Courses Published to Cloud ✓");
+    } catch {}
+  };
+
+  const pullCoursesFromCloud = async () => {
+    if (!isCloudConfigured) return;
+    try {
+      const baseUrl = cloudConfig.url.trim().replace(/\/$/, "");
+      const res = await fetch(
+        `${baseUrl}/rest/v1/axiom_courses?id=eq.master_curriculum&select=*`,
+        { headers: getHeaders() }
+      );
+      const data = await res.json();
+      if (Array.isArray(data) && data[0]?.data) {
+        setCourses(data[0].data);
+      }
+    } catch {}
+  };
+
+  // Initial Cloud Sync on load
+  useEffect(() => {
+    if (isCloudConfigured) {
+      fetchPublicLeaderboard();
+      pullCoursesFromCloud();
+    }
+  }, [isCloudConfigured]);
 
   const activeCourse = useMemo(
     () => courses.find((c) => c.id === selectedCourseId) || courses[0],
     [courses, selectedCourseId]
   );
 
-  // Compute honest, real-time course mastery percentage from separated progress
-  const getCourseStats = (course) => {
+  // Compute course mastery for any given progress object
+  const getCourseStatsForProgress = (course, progObj = progress) => {
     let totalEx = 0;
     let earnedScore = 0;
     course.units?.forEach((u) =>
       u.lessons?.forEach((l) =>
         l.exercises?.forEach((ex) => {
           totalEx += 1;
-          const status = progress.exercises?.[ex.id]?.level;
+          const status = progObj?.exercises?.[ex.id]?.level;
           if (status === "mastered") earnedScore += 1;
           else if (status === "familiar") earnedScore += 0.5;
         })
@@ -506,29 +749,98 @@ export default function App() {
     setHintCount(0);
   };
 
-  // Record Exercise Mastery cleanly in separated progress store
+  // Update active scholar's progress & automatically sync to cloud
   const recordExerciseResult = (exId, qualifiedForMastery) => {
-    setProgress((prev) => {
-      const existing = prev.exercises?.[exId]?.level;
+    setProfilesMap((prev) => {
+      const currentProf = prev[activeProfile.handle] || activeProfile;
+      const prevProg = currentProf.progress || { exercises: {}, points: 0, streakDays: 0 };
+      const existing = prevProg.exercises?.[exId]?.level;
       const newLevel = qualifiedForMastery
         ? "mastered"
         : existing === "mastered"
         ? "mastered"
         : "familiar";
       const ptsDelta = existing ? 25 : qualifiedForMastery ? 100 : 50;
-      return {
-        ...prev,
-        points: (prev.points || 0) + ptsDelta,
-        streakDays: Math.max(prev.streakDays || 0, 1),
-        exercises: {
-          ...(prev.exercises || {}),
-          [exId]: { level: newLevel, updatedAt: Date.now() }
+
+      const updatedProf = {
+        ...currentProf,
+        updatedAt: Date.now(),
+        progress: {
+          ...prevProg,
+          points: (prevProg.points || 0) + ptsDelta,
+          streakDays: Math.max(prevProg.streakDays || 0, 1),
+          exercises: {
+            ...(prevProg.exercises || {}),
+            [exId]: { level: newLevel, updatedAt: Date.now() }
+          }
         }
       };
+
+      pushProfileToCloud(updatedProf);
+      return { ...prev, [activeProfile.handle]: updatedProf };
     });
   };
 
-  // Scratchpad drawing handlers
+  // Toggle Public / Private visibility on active profile
+  const toggleProfilePrivacy = () => {
+    setProfilesMap((prev) => {
+      const currentProf = prev[activeProfile.handle] || activeProfile;
+      const updatedProf = {
+        ...currentProf,
+        isPublic: !currentProf.isPublic,
+        updatedAt: Date.now()
+      };
+      pushProfileToCloud(updatedProf);
+      return { ...prev, [activeProfile.handle]: updatedProf };
+    });
+  };
+
+  // Create a new Scholar Profile
+  const handleCreateProfile = (e) => {
+    e.preventDefault();
+    const cleanHandle = newHandle.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    if (!cleanHandle || !newDisplayName.trim()) {
+      setProfileModalMsg({
+        type: "error",
+        text: "Please enter both a Display Name and a unique Handle."
+      });
+      return;
+    }
+    const created = {
+      handle: cleanHandle,
+      displayName: newDisplayName.trim(),
+      pin: newPin.trim() || "0000",
+      isPublic: newIsPublic,
+      progress: { exercises: {}, points: 0, streakDays: 0 },
+      updatedAt: Date.now()
+    };
+    setProfilesMap((prev) => ({ ...prev, [cleanHandle]: created }));
+    setActiveHandle(cleanHandle);
+    pushProfileToCloud(created);
+    setNewHandle("");
+    setNewDisplayName("");
+    setNewPin("");
+    setProfileModalMsg({
+      type: "success",
+      text: `Created profile for ${created.displayName} (@${created.handle})!`
+    });
+  };
+
+  // Combined Leaderboard (merges local public profiles + cloud public profiles)
+  const combinedPublicScholars = useMemo(() => {
+    const byHandle = {};
+    Object.values(profilesMap).forEach((p) => {
+      if (p.isPublic) byHandle[p.handle] = p;
+    });
+    publicLeaderboard.forEach((p) => {
+      if (p.isPublic) byHandle[p.handle] = p;
+    });
+    return Object.values(byHandle).sort(
+      (a, b) => (b.progress?.points || 0) - (a.progress?.points || 0)
+    );
+  }, [profilesMap, publicLeaderboard]);
+
+  // Scratchpad handlers
   const startDraw = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -559,37 +871,45 @@ export default function App() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
-  // Import JSON from Claude (Supports adding/replacing a unit or a full course without touching progress)
+  // Import JSON from Claude & auto-publish to Cloud if connected
   const handleImportJson = () => {
     try {
       const cleaned = jsonInput.trim().replace(/^```json\s*/i, "").replace(/```$/, "");
       const parsed = JSON.parse(cleaned);
 
       if (parsed.targetCourseId && parsed.unit) {
-        setCourses((prev) =>
-          prev.map((c) => {
+        setCourses((prev) => {
+          const next = prev.map((c) => {
             if (c.id !== parsed.targetCourseId) return c;
             const exists = c.units.some((u) => u.id === parsed.unit.id);
             const updatedUnits = exists
               ? c.units.map((u) => (u.id === parsed.unit.id ? parsed.unit : u))
               : [...c.units, parsed.unit];
             return { ...c, units: updatedUnits };
-          })
-        );
+          });
+          pushCoursesToCloud(next);
+          return next;
+        });
         setSelectedCourseId(parsed.targetCourseId);
         setImportStatus({
           type: "success",
-          msg: `Successfully imported "${parsed.unit.title}" into ${parsed.targetCourseId.toUpperCase()}! Your progress was preserved.`
+          msg: `Imported "${parsed.unit.title}" into ${parsed.targetCourseId.toUpperCase()}! ${
+            isCloudConfigured ? "Synced to Cloud for all devices." : "Saved locally."
+          }`
         });
       } else if (parsed.id && parsed.title && Array.isArray(parsed.units)) {
         setCourses((prev) => {
           const exists = prev.some((c) => c.id === parsed.id);
-          return exists ? prev.map((c) => (c.id === parsed.id ? parsed : c)) : [...prev, parsed];
+          const next = exists
+            ? prev.map((c) => (c.id === parsed.id ? parsed : c))
+            : [...prev, parsed];
+          pushCoursesToCloud(next);
+          return next;
         });
         setSelectedCourseId(parsed.id);
         setImportStatus({
           type: "success",
-          msg: `Imported full course "${parsed.code || ""} ${parsed.title}"! Your progress was preserved.`
+          msg: `Imported full course "${parsed.code || ""} ${parsed.title}"!`
         });
       } else {
         throw new Error(
@@ -600,12 +920,11 @@ export default function App() {
     } catch (err) {
       setImportStatus({
         type: "error",
-        msg: `JSON Parse Error: ${err.message}. Make sure all LaTeX backslashes are double-escaped (e.g. "\\\\frac").`
+        msg: `JSON Parse Error: ${err.message}. Ensure all LaTeX backslashes are double-escaped.`
       });
     }
   };
 
-  // Search filter across lessons & theorems
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
@@ -629,7 +948,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       {/* ===================================================================
-          TOP NAVIGATION BAR (Responsive, Accessible, Full-Width)
+          TOP NAVIGATION BAR
          =================================================================== */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
@@ -637,6 +956,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setCoursesMenuOpen((o) => !o)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-blue-600 hover:bg-blue-50 transition"
               >
@@ -649,9 +969,10 @@ export default function App() {
                     Pure Mathematics Curriculum
                   </div>
                   {courses.map((c) => {
-                    const st = getCourseStats(c);
+                    const st = getCourseStatsForProgress(c, progress);
                     return (
                       <button
+                        type="button"
                         key={c.id}
                         onClick={() => {
                           setSelectedCourseId(c.id);
@@ -672,7 +993,6 @@ export default function App() {
               )}
             </div>
 
-            {/* Wide Search Input */}
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -680,12 +1000,13 @@ export default function App() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search theorems, cosets, rings..."
-                className="bg-slate-100 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-blue-500 w-44 sm:w-64 transition"
+                className="bg-slate-100 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-blue-500 w-40 sm:w-60 transition"
               />
               {searchResults.length > 0 && (
                 <div className="absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50">
                   {searchResults.map(({ course, lesson }) => (
                     <button
+                      type="button"
                       key={lesson.id}
                       onClick={() => {
                         setSelectedCourseId(course.id);
@@ -707,6 +1028,7 @@ export default function App() {
 
           {/* Center Brand */}
           <button
+            type="button"
             onClick={() => setActiveView("dashboard")}
             className="flex items-center gap-2.5 text-left"
           >
@@ -723,10 +1045,11 @@ export default function App() {
             </div>
           </button>
 
-          {/* Right Navigation & Real Stats */}
+          {/* Right Navigation, Leaderboard & Active Scholar Profile Pill */}
           <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <div className="hidden lg:flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
               <button
+                type="button"
                 onClick={() => setActiveView("dashboard")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold transition ${
                   activeView === "dashboard"
@@ -737,41 +1060,55 @@ export default function App() {
                 Dashboard
               </button>
               <button
-                onClick={() => setActiveView("course")}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition ${
-                  activeView === "course"
+                type="button"
+                onClick={() => setActiveView("leaderboard")}
+                className={`px-3 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 ${
+                  activeView === "leaderboard"
                     ? "bg-white text-blue-600 shadow-xs"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                {activeCourse?.code || "M 373K"}
+                <Users className="w-3.5 h-3.5" /> Scholars
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("studio")}
+                className={`px-3 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 ${
+                  activeView === "studio"
+                    ? "bg-white text-purple-700 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" /> Studio
               </button>
             </div>
 
+            {/* Active Scholar Profile Button (Opens Profile & Cloud Sync Modal) */}
             <button
-              onClick={() => setActiveView("studio")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center gap-1.5 ${
-                activeView === "studio"
-                  ? "bg-purple-600 text-white border-purple-600"
-                  : "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
-              }`}
+              type="button"
+              onClick={() => {
+                setProfileModalMsg(null);
+                setShowProfileModal(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-800 transition"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Course Studio</span>
+              <span className="w-5 h-5 rounded-full bg-[#0b2149] text-white flex items-center justify-center text-[10px]">
+                {activeProfile.displayName?.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="max-w-[90px] truncate">{activeProfile.displayName}</span>
+              {activeProfile.isPublic ? (
+                <Globe className="w-3.5 h-3.5 text-emerald-600" title="Public Profile" />
+              ) : (
+                <Lock className="w-3.5 h-3.5 text-amber-600" title="Private Profile" />
+              )}
             </button>
 
-            <div
-              title="Real Streak (increments when you complete exercises)"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold"
-            >
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold">
               <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
               {progress.streakDays || 0}
             </div>
 
-            <div
-              title="Real Proof Points earned from exercises"
-              className="hidden sm:flex items-center gap-1 px-3 py-1 rounded-full bg-[#0b2149] text-white text-xs font-bold"
-            >
+            <div className="hidden sm:flex items-center gap-1 px-3 py-1 rounded-full bg-[#0b2149] text-white text-xs font-bold">
               {progress.points || 0} pts
             </div>
           </div>
@@ -779,28 +1116,378 @@ export default function App() {
       </header>
 
       {/* ===================================================================
-          VIEW 1: LEARNER DASHBOARD (With Real Progress & Vaaler Syllabus)
+          PROFILE SWITCHER, PRIVACY TOGGLE & CLOUD SYNC MODAL
+         =================================================================== */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
+                  Cross-Device Scholar Identity
+                </div>
+                <h2 className="text-xl font-serif font-bold text-slate-900">
+                  Scholar Profiles & Public / Private Sync
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(false)}
+                className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-600"
+              >
+                Close ✕
+              </button>
+            </div>
+
+            {/* Active Profile Privacy Card */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-xs text-slate-500">Currently Active Scholar</div>
+                <div className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  {activeProfile.displayName}
+                  <span className="text-xs font-mono text-slate-500">
+                    (@{activeProfile.handle})
+                  </span>
+                </div>
+                <div className="text-xs text-slate-600 mt-0.5">
+                  {activeProfile.isPublic
+                    ? "Public: Your mastery % and points are visible on the Scholars Leaderboard."
+                    : "Private: Your progress syncs across your devices, but is hidden from the public leaderboard."}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={toggleProfilePrivacy}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition ${
+                  activeProfile.isPublic
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                    : "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
+                }`}
+              >
+                {activeProfile.isPublic ? (
+                  <>
+                    <Globe className="w-3.5 h-3.5" /> Public Profile (Click to Make Private)
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5" /> Private Profile (Click to Make Public)
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Modal Mode Tabs */}
+            <div className="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileMode("switch");
+                  setProfileModalMsg(null);
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition ${
+                  profileMode === "switch" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600"
+                }`}
+              >
+                Switch Profile
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileMode("create");
+                  setProfileModalMsg(null);
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition ${
+                  profileMode === "create" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600"
+                }`}
+              >
+                + New Profile
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileMode("cloud-login");
+                  setProfileModalMsg(null);
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition ${
+                  profileMode === "cloud-login"
+                    ? "bg-white text-blue-600 shadow-xs"
+                    : "text-slate-600"
+                }`}
+              >
+                Log In on New Device
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileMode("cloud-setup");
+                  setProfileModalMsg(null);
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition ${
+                  profileMode === "cloud-setup"
+                    ? "bg-white text-purple-700 shadow-xs"
+                    : "text-slate-600"
+                }`}
+              >
+                Cloud Sync Setup
+              </button>
+            </div>
+
+            {profileModalMsg && (
+              <div
+                className={`p-3 rounded-xl text-xs font-semibold border ${
+                  profileModalMsg.type === "success"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    : "bg-rose-50 border-rose-200 text-rose-800"
+                }`}
+              >
+                {profileModalMsg.text}
+              </div>
+            )}
+
+            {/* TAB 1: SWITCH BETWEEN SAVED PROFILES ON THIS DEVICE */}
+            {profileMode === "switch" && (
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-slate-500">
+                  Profiles on This Device ({Object.keys(profilesMap).length})
+                </div>
+                {Object.values(profilesMap).map((p) => (
+                  <div
+                    key={p.handle}
+                    className={`p-3.5 rounded-xl border flex items-center justify-between ${
+                      p.handle === activeProfile.handle
+                        ? "bg-blue-50/70 border-blue-500"
+                        : "bg-white border-slate-200"
+                    }`}
+                  >
+                    <div>
+                      <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        {p.displayName}
+                        <span className="text-xs font-mono text-slate-400">@{p.handle}</span>
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          {p.isPublic ? "Public" : "Private"}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5">
+                        {p.progress?.points || 0} pts ·{" "}
+                        {Object.keys(p.progress?.exercises || {}).length} exercises completed
+                      </div>
+                    </div>
+                    {p.handle === activeProfile.handle ? (
+                      <span className="text-xs font-bold text-blue-600">Active ✓</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setActiveHandle(p.handle)}
+                        className="px-3 py-1.5 rounded-lg bg-[#0b2149] text-white text-xs font-bold"
+                      >
+                        Switch
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* TAB 2: CREATE A NEW PROFILE */}
+            {profileMode === "create" && (
+              <form onSubmit={handleCreateProfile} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Display Name (e.g., Joseph, Alex)
+                  </label>
+                  <input
+                    type="text"
+                    value={newDisplayName}
+                    onChange={(e) => setNewDisplayName(e.target.value)}
+                    placeholder="Enter your name..."
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Unique Handle (used to sync across devices)
+                    </label>
+                    <input
+                      type="text"
+                      value={newHandle}
+                      onChange={(e) => setNewHandle(e.target.value)}
+                      placeholder="e.g. joseph_ut"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      4-Digit PIN (for logging in on phone/laptop)
+                    </label>
+                    <input
+                      type="password"
+                      maxLength={8}
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                      placeholder="e.g. 1234"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-mono"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 pt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newIsPublic}
+                    onChange={(e) => setNewIsPublic(e.target.checked)}
+                    className="rounded border-slate-300 text-blue-600"
+                  />
+                  Make profile Public (show my progress on the shared Scholars Leaderboard)
+                </label>
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
+                >
+                  Create Scholar Profile
+                </button>
+              </form>
+            )}
+
+            {/* TAB 3: PULL / LOG IN TO YOUR PROFILE ON PHONE OR ANOTHER COMPUTER */}
+            {profileMode === "cloud-login" && (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-600">
+                  On your phone or a friend's computer? Enter your Handle and PIN to pull your live progress from the cloud.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    value={newHandle}
+                    onChange={(e) => setNewHandle(e.target.value)}
+                    placeholder="Handle (e.g. joseph)"
+                    className="px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-mono"
+                  />
+                  <input
+                    type="password"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    placeholder="4-Digit PIN"
+                    className="px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-mono"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => pullProfileFromCloud(newHandle, newPin)}
+                  className="w-full py-2.5 rounded-xl bg-[#0b2149] hover:bg-blue-900 text-white text-xs font-bold"
+                >
+                  Pull My Profile from Cloud
+                </button>
+              </div>
+            )}
+
+            {/* TAB 4: SUPABASE CLOUD CONFIGURATION */}
+            {profileMode === "cloud-setup" && (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Paste a free <strong>Supabase Project URL</strong> and <strong>Anon Public Key</strong> (from <em>supabase.com → Project Settings → API</em>) to sync profiles and courses across all phones and computers.
+                </p>
+                <input
+                  type="text"
+                  value={cloudConfig.url}
+                  onChange={(e) =>
+                    setCloudConfig((prev) => ({ ...prev, url: e.target.value }))
+                  }
+                  placeholder="https://your-project.supabase.co"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-mono"
+                />
+                <input
+                  type="password"
+                  value={cloudConfig.anonKey}
+                  onChange={(e) =>
+                    setCloudConfig((prev) => ({ ...prev, anonKey: e.target.value }))
+                  }
+                  placeholder="Supabase anon public key (eyJhbGci...)"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-mono"
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(SUPABASE_SQL_SCRIPT);
+                      setCopiedSql(true);
+                      setTimeout(() => setCopiedSql(false), 2000);
+                    }}
+                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5"
+                  >
+                    {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedSql ? "Copied SQL Table Script!" : "1. Copy SQL Setup Script"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      pushProfileToCloud(activeProfile);
+                      pushCoursesToCloud(courses);
+                      setProfileModalMsg({
+                        type: "success",
+                        text: "Synced active profile & courses to Supabase Cloud!"
+                      });
+                    }}
+                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold"
+                  >
+                    2. Test & Sync Now
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================
+          VIEW 1: LEARNER DASHBOARD
          =================================================================== */}
       {activeView === "dashboard" && (
         <div>
-          {/* Navy Hero Banner */}
           <div className="bg-[#0b2149] text-white py-10 px-6 border-b border-slate-800">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-blue-900/60 border border-blue-400/30 flex items-center justify-center font-mono font-bold text-xl text-blue-200">
-                  G/N
+                  {activeProfile.displayName?.slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-serif font-bold">
-                    Axiom Academy Scholar
-                  </h1>
+                  <div className="flex items-center gap-2.5">
+                    <h1 className="text-2xl sm:text-3xl font-serif font-bold">
+                      {activeProfile.displayName}
+                    </h1>
+                    <button
+                      type="button"
+                      onClick={toggleProfilePrivacy}
+                      className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+                        activeProfile.isPublic
+                          ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-200"
+                          : "bg-amber-500/20 border-amber-400/40 text-amber-200"
+                      }`}
+                    >
+                      {activeProfile.isPublic ? (
+                        <>
+                          <Globe className="w-3 h-3" /> Public Profile
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3 h-3" /> Private Profile
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <div className="flex flex-wrap items-center gap-2 mt-1.5">
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-800/80 border border-blue-400/30 text-blue-200 font-medium">
                       {Object.keys(progress.exercises || {}).length} Exercises Completed
                     </span>
-                    <span className="text-xs text-slate-300">
-                      · Progress stored separately from course JSON
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowProfileModal(true)}
+                      className="text-xs text-sky-300 hover:underline font-medium"
+                    >
+                      Switch Scholar / Cross-Device Sync ({syncStatus || (isCloudConfigured ? "Cloud Ready" : "Local Mode")}) →
+                    </button>
                   </div>
                 </div>
               </div>
@@ -808,35 +1495,57 @@ export default function App() {
               <div className="bg-slate-900/70 border border-slate-700 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                    Claude Course Back-End
+                    Compare Progress With Friends
                   </div>
                   <div className="text-sm font-semibold text-white">
-                    Ready to import Vaaler / Artin M 373K units?
+                    View public scholars & course mastery rankings
                   </div>
                 </div>
                 <button
-                  onClick={() => setActiveView("studio")}
+                  type="button"
+                  onClick={() => {
+                    fetchPublicLeaderboard();
+                    setActiveView("leaderboard");
+                  }}
                   className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition shrink-0"
                 >
-                  Open Course Studio
+                  Scholars Leaderboard
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Main Dashboard Grid */}
           <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
             <aside className="lg:col-span-3 space-y-2">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-400 px-3 mb-2">
                 Pure Math Workspace
               </div>
               <button
+                type="button"
                 onClick={() => setActiveView("dashboard")}
                 className="w-full text-left px-3.5 py-2.5 rounded-lg bg-blue-50 text-blue-700 font-semibold text-sm flex items-center gap-2.5"
               >
                 <BookOpen className="w-4 h-4" /> My Courses
               </button>
               <button
+                type="button"
+                onClick={() => {
+                  fetchPublicLeaderboard();
+                  setActiveView("leaderboard");
+                }}
+                className="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-100 text-slate-700 font-medium text-sm flex items-center gap-2.5"
+              >
+                <Users className="w-4 h-4 text-blue-600" /> Public Scholars Directory
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(true)}
+                className="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-100 text-slate-700 font-medium text-sm flex items-center gap-2.5"
+              >
+                <Cloud className="w-4 h-4 text-emerald-600" /> Profiles & Cloud Sync
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveView("studio")}
                 className="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-100 text-slate-700 font-medium text-sm flex items-center gap-2.5"
               >
@@ -851,10 +1560,11 @@ export default function App() {
                     My Pure Mathematics Courses
                   </h2>
                   <p className="text-sm text-slate-500">
-                    Select a course to study video lectures, blackboard derivations, and proof-writing exercises
+                    Tracking progress for <strong>{activeProfile.displayName}</strong> (@{activeProfile.handle})
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setActiveView("studio")}
                   className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
                 >
@@ -864,7 +1574,7 @@ export default function App() {
 
               <div className="space-y-4">
                 {courses.map((course) => {
-                  const stats = getCourseStats(course);
+                  const stats = getCourseStatsForProgress(course, progress);
                   return (
                     <div
                       key={course.id}
@@ -894,6 +1604,7 @@ export default function App() {
                       </div>
 
                       <button
+                        type="button"
                         onClick={() => {
                           setSelectedCourseId(course.id);
                           setActiveView("course");
@@ -912,7 +1623,110 @@ export default function App() {
       )}
 
       {/* ===================================================================
-          VIEW 2: COURSE CURRICULUM VIEW (Vaaler / Artin Units & Lessons)
+          VIEW 1B: PUBLIC SCHOLARS DIRECTORY & LEADERBOARD
+         =================================================================== */}
+      {activeView === "leaderboard" && (
+        <div className="max-w-7xl mx-auto w-full px-6 py-8 space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-blue-600">
+                Public Scholar Directory
+              </div>
+              <h1 className="text-2xl font-serif font-bold text-slate-900">
+                Scholars Leaderboard & Course Mastery
+              </h1>
+              <p className="text-xs text-slate-500 mt-1">
+                Only profiles set to <strong>Public</strong> appear here. Scholars set to <strong>Private</strong> sync privately across their own devices.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={fetchPublicLeaderboard}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh Leaderboard
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(true)}
+                className="px-4 py-2 rounded-xl bg-[#0b2149] text-white text-xs font-bold"
+              >
+                Create / Manage Profile
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="py-3.5 px-6">Rank & Scholar</th>
+                  <th className="py-3.5 px-4">Proof Points</th>
+                  <th className="py-3.5 px-4">Exercises</th>
+                  {courses.map((c) => (
+                    <th key={c.id} className="py-3.5 px-4">
+                      {c.code} Mastery
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 text-sm">
+                {combinedPublicScholars.length === 0 ? (
+                  <tr>
+                    <td colSpan={3 + courses.length} className="py-8 text-center text-slate-500 text-xs">
+                      No public profiles yet. Click your profile badge in the top bar to set your profile to Public!
+                    </td>
+                  </tr>
+                ) : (
+                  combinedPublicScholars.map((scholar, idx) => (
+                    <tr
+                      key={scholar.handle}
+                      className={
+                        scholar.handle === activeProfile.handle ? "bg-blue-50/40" : "hover:bg-slate-50"
+                      }
+                    >
+                      <td className="py-4 px-6 font-bold text-slate-900 flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs flex items-center justify-center font-mono">
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <div>
+                            {scholar.displayName}{" "}
+                            {scholar.handle === activeProfile.handle && (
+                              <span className="text-[11px] text-blue-600 font-semibold">(You)</span>
+                            )}
+                          </div>
+                          <div className="text-xs font-mono text-slate-400">@{scholar.handle}</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 font-mono font-bold text-blue-600">
+                        {scholar.progress?.points || 0} pts
+                      </td>
+                      <td className="py-4 px-4 text-xs text-slate-600">
+                        {Object.keys(scholar.progress?.exercises || {}).length} solved
+                      </td>
+                      {courses.map((c) => {
+                        const st = getCourseStatsForProgress(c, scholar.progress);
+                        return (
+                          <td key={c.id} className="py-4 px-4">
+                            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-800">
+                              {st.pct}%
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================================
+          VIEW 2: COURSE CURRICULUM VIEW
          =================================================================== */}
       {activeView === "course" && activeCourse && (
         <div className="max-w-7xl mx-auto w-full px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -928,8 +1742,10 @@ export default function App() {
                 <MathText text={activeCourse.syllabus} />
               </p>
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-700">
-                <span>Course Mastery</span>
-                <span className="text-blue-600">{getCourseStats(activeCourse).pct}%</span>
+                <span>{activeProfile.displayName}'s Mastery</span>
+                <span className="text-blue-600">
+                  {getCourseStatsForProgress(activeCourse, progress).pct}%
+                </span>
               </div>
             </div>
 
@@ -937,7 +1753,7 @@ export default function App() {
               <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                 Unit Breakdown
               </div>
-              {activeCourse.units?.map((u, idx) => {
+              {activeCourse.units?.map((u) => {
                 const st = getUnitStats(u);
                 return (
                   <div
@@ -980,6 +1796,7 @@ export default function App() {
                   <div className="p-6 text-xs text-slate-500 flex items-center justify-between">
                     <span>No lessons imported in this unit yet.</span>
                     <button
+                      type="button"
                       onClick={() => setActiveView("studio")}
                       className="text-blue-600 font-semibold hover:underline"
                     >
@@ -1011,6 +1828,7 @@ export default function App() {
 
                         <div className="flex sm:flex-col gap-2 shrink-0">
                           <button
+                            type="button"
                             onClick={() => openLesson(lesson, "blackboard")}
                             className="px-4 py-2 rounded-xl bg-[#0b2149] hover:bg-blue-900 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition"
                           >
@@ -1018,6 +1836,7 @@ export default function App() {
                             Lecture ({lesson.steps?.length || 0} steps)
                           </button>
                           <button
+                            type="button"
                             onClick={() => openLesson(lesson, "exercises")}
                             className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center justify-center gap-1.5 transition"
                           >
@@ -1036,13 +1855,14 @@ export default function App() {
       )}
 
       {/* ===================================================================
-          VIEW 3: LESSON VIEW (Video Player + Blackboard + Proof Exercises)
+          VIEW 3: LESSON VIEW (Video + Blackboard + Proof Exercises)
          =================================================================== */}
       {activeView === "lesson" && selectedLesson && (
         <div className="max-w-7xl mx-auto w-full px-6 py-8 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => setActiveView("course")}
                 className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700"
               >
@@ -1060,6 +1880,7 @@ export default function App() {
 
             <div className="flex items-center gap-2 bg-slate-200/70 p-1 rounded-xl">
               <button
+                type="button"
                 onClick={() => setLessonTab("blackboard")}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition ${
                   lessonTab === "blackboard"
@@ -1070,6 +1891,7 @@ export default function App() {
                 1. Video & Blackboard Lecture
               </button>
               <button
+                type="button"
                 onClick={() => setLessonTab("exercises")}
                 className={`px-4 py-2 rounded-lg text-xs font-bold transition ${
                   lessonTab === "exercises"
@@ -1085,7 +1907,6 @@ export default function App() {
           {lessonTab === "blackboard" ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-8 space-y-6">
-                {/* Optional Narrated Video Lecture Player */}
                 {selectedLesson.videoUrl && (
                   <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
                     <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center gap-2 text-xs font-semibold text-sky-400">
@@ -1109,7 +1930,6 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Interactive Blackboard Derivation */}
                 <div className="bg-[#0b1528] text-slate-100 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
                   <div className="p-4 rounded-xl bg-blue-950/60 border border-blue-400/30">
                     <div className="text-[11px] font-mono uppercase tracking-wider text-sky-300 mb-1">
@@ -1187,7 +2007,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Right Column: Proof Outline & Video URL Editor */}
               <div className="lg:col-span-4 space-y-4">
                 <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
                   <h3 className="text-sm font-bold text-slate-900">Derivation Steps</h3>
@@ -1212,9 +2031,6 @@ export default function App() {
               </div>
             </div>
           ) : (
-            /* ===============================================================
-               EXERCISE ENGINE (Supports 'mcq', 'numeric', and 'proof' types)
-               =============================================================== */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
                 {selectedLesson.exercises && selectedLesson.exercises.length > 0 ? (
@@ -1225,7 +2041,6 @@ export default function App() {
 
                     return (
                       <>
-                        {/* Problem Header & Switcher */}
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-2">
                             {selectedLesson.exercises.map((item, idx) => (
@@ -1270,12 +2085,10 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* Question Prompt */}
                         <div className="text-base font-medium text-slate-900 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
                           <MathText text={ex.question} />
                         </div>
 
-                        {/* TYPE 1: MULTIPLE CHOICE (All options are accessible <button> elements with KaTeX) */}
                         {exType === "mcq" && (
                           <div className="space-y-2.5">
                             {ex.options?.map((opt, oIdx) => {
@@ -1322,7 +2135,6 @@ export default function App() {
                           </div>
                         )}
 
-                        {/* TYPE 2: NUMERIC */}
                         {exType === "numeric" && (
                           <div className="space-y-2">
                             <input
@@ -1343,7 +2155,6 @@ export default function App() {
                           </div>
                         )}
 
-                        {/* TYPE 3: RIGOROUS PROOF-WRITING EXERCISE */}
                         {exType === "proof" && (
                           <div className="space-y-4">
                             <div>
@@ -1419,7 +2230,7 @@ export default function App() {
                                         }}
                                         className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
                                       >
-                                        Save Rubric Grade
+                                        Save Rubric Grade to {activeProfile.displayName}'s Profile
                                       </button>
                                     </div>
                                   </div>
@@ -1429,7 +2240,6 @@ export default function App() {
                           </div>
                         )}
 
-                        {/* Hints Drawer */}
                         {hintCount > 0 && ex.hints && (
                           <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
                             <div className="text-xs font-bold text-amber-900">
@@ -1443,7 +2253,6 @@ export default function App() {
                           </div>
                         )}
 
-                        {/* Action Bar */}
                         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
                           {ex.hints && ex.hints.length > 0 ? (
                             <button
@@ -1520,7 +2329,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* Scratchpad Column */}
               <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-bold text-slate-700">
@@ -1564,7 +2372,7 @@ export default function App() {
       )}
 
       {/* ===================================================================
-          VIEW 4: COURSE STUDIO (Valid Double-Escaped Prompt & Importer)
+          VIEW 4: COURSE STUDIO
          =================================================================== */}
       {activeView === "studio" && (
         <div className="max-w-7xl mx-auto w-full px-6 py-8 space-y-6">
@@ -1574,10 +2382,10 @@ export default function App() {
                 Course Studio Back-End
               </div>
               <h1 className="text-2xl font-serif font-bold text-slate-900">
-                Claude Curriculum Importer & GitHub Exporter
+                Claude Curriculum Importer & Cloud Publisher
               </h1>
               <p className="text-xs text-slate-500 mt-1">
-                Uses a strictly validated double-escaped LaTeX JSON schema with video lectures, proof rubrics, and separated learner progress.
+                Import units from Claude and sync them to all devices via Cloud or GitHub export.
               </p>
             </div>
             <div className="flex gap-2">
@@ -1601,7 +2409,7 @@ export default function App() {
                     : "bg-slate-100 text-slate-700"
                 }`}
               >
-                2. Copy INITIAL_COURSES for GitHub
+                2. Export for GitHub / Cloud Sync
               </button>
             </div>
           </div>
@@ -1611,7 +2419,7 @@ export default function App() {
               <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold text-slate-900">
-                    Validated Claude Prompt (Double-Escaped JSON)
+                    Validated Claude Prompt
                   </h2>
                   <button
                     type="button"
@@ -1637,7 +2445,7 @@ export default function App() {
                     Paste Claude's JSON Output
                   </h2>
                   <span className="text-xs text-slate-500">
-                    Supports full course or single unit append
+                    Auto-publishes to Cloud if connected
                   </span>
                 </div>
 
@@ -1645,7 +2453,7 @@ export default function App() {
                   rows={13}
                   value={jsonInput}
                   onChange={(e) => setJsonInput(e.target.value)}
-                  placeholder='Paste valid JSON from Claude here...'
+                  placeholder="Paste valid JSON from Claude here..."
                   className="w-full bg-slate-950 text-emerald-300 rounded-xl p-4 text-xs font-mono focus:outline-none"
                 />
 
@@ -1678,13 +2486,22 @@ export default function App() {
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h2 className="text-base font-bold text-slate-900">
-                    Permanent GitHub / Vercel Export
+                    Permanent GitHub / Cloud Export
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Copy this <code className="text-purple-700 font-mono">INITIAL_COURSES</code> block and replace it at the top of <code className="text-purple-700 font-mono">src/App.jsx</code> on GitHub so your live Vercel site updates globally.
+                    Copy <code className="text-purple-700 font-mono">INITIAL_COURSES</code> for GitHub, or push courses directly to your connected Supabase Cloud.
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {isCloudConfigured && (
+                    <button
+                      type="button"
+                      onClick={() => pushCoursesToCloud(courses)}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2"
+                    >
+                      <Cloud className="w-4 h-4" /> Publish All Courses to Cloud
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
@@ -1697,18 +2514,6 @@ export default function App() {
                   >
                     {copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     {copiedCode ? "Copied INITIAL_COURSES!" : "Copy INITIAL_COURSES JS Code"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm("Reset local course cache to INITIAL_COURSES? (Your exercise progress will NOT be erased.)")) {
-                        localStorage.removeItem("axiom_courses_v2");
-                        setCourses(INITIAL_COURSES);
-                      }
-                    }}
-                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold"
-                  >
-                    Reset Course Cache
                   </button>
                 </div>
               </div>
