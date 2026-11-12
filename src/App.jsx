@@ -922,4 +922,800 @@ export default function App() {
                 {activeCourse.category}
               </div>
               <h1 className="text-2xl font-serif font-bold text-slate-900">
-                {active
+                {activeCourse.code}: {activeCourse.title}
+              </h1>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                <MathText text={activeCourse.syllabus} />
+              </p>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-700">
+                <span>Course Mastery</span>
+                <span className="text-blue-600">{getCourseStats(activeCourse).pct}%</span>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Unit Breakdown
+              </div>
+              {activeCourse.units?.map((u, idx) => {
+                const st = getUnitStats(u);
+                return (
+                  <div
+                    key={u.id}
+                    className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2"
+                  >
+                    <div className="text-xs font-semibold text-slate-800">
+                      <MathText text={u.title} />
+                    </div>
+                    <span className="text-xs font-mono font-bold text-blue-600 shrink-0">
+                      {st.pct}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
+
+          <section className="lg:col-span-8 space-y-6">
+            {activeCourse.units?.map((unit) => (
+              <div
+                key={unit.id}
+                className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden"
+              >
+                <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-serif font-bold text-slate-900">
+                      <MathText text={unit.title} />
+                    </h2>
+                    <p className="text-xs text-slate-600 mt-1">
+                      <MathText text={unit.description} />
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+                    {getUnitStats(unit).pct}% Mastered
+                  </span>
+                </div>
+
+                {unit.lessons?.length === 0 ? (
+                  <div className="p-6 text-xs text-slate-500 flex items-center justify-between">
+                    <span>No lessons imported in this unit yet.</span>
+                    <button
+                      onClick={() => setActiveView("studio")}
+                      className="text-blue-600 font-semibold hover:underline"
+                    >
+                      Import Unit via Claude →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-200">
+                    {unit.lessons?.map((lesson) => (
+                      <div
+                        key={lesson.id}
+                        className="p-6 hover:bg-slate-50/70 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      >
+                        <div className="space-y-2 max-w-xl">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-slate-900 text-base">
+                              <MathText text={lesson.title} />
+                            </span>
+                            {lesson.videoUrl && (
+                              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800 flex items-center gap-1">
+                                <Video className="w-3 h-3" /> Video
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3 leading-relaxed">
+                            <MathText text={lesson.theorem} />
+                          </div>
+                        </div>
+
+                        <div className="flex sm:flex-col gap-2 shrink-0">
+                          <button
+                            onClick={() => openLesson(lesson, "blackboard")}
+                            className="px-4 py-2 rounded-xl bg-[#0b2149] hover:bg-blue-900 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            Lecture ({lesson.steps?.length || 0} steps)
+                          </button>
+                          <button
+                            onClick={() => openLesson(lesson, "exercises")}
+                            className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                          >
+                            <PenTool className="w-3.5 h-3.5" />
+                            Exercises ({lesson.exercises?.length || 0})
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </section>
+        </div>
+      )}
+
+      {/* ===================================================================
+          VIEW 3: LESSON VIEW (Video Player + Blackboard + Proof Exercises)
+         =================================================================== */}
+      {activeView === "lesson" && selectedLesson && (
+        <div className="max-w-7xl mx-auto w-full px-6 py-8 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setActiveView("course")}
+                className="p-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div>
+                <div className="text-xs font-bold text-blue-600">
+                  {activeCourse?.code} · {activeCourse?.title}
+                </div>
+                <h1 className="text-xl font-serif font-bold text-slate-900">
+                  <MathText text={selectedLesson.title} />
+                </h1>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-slate-200/70 p-1 rounded-xl">
+              <button
+                onClick={() => setLessonTab("blackboard")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition ${
+                  lessonTab === "blackboard"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                1. Video & Blackboard Lecture
+              </button>
+              <button
+                onClick={() => setLessonTab("exercises")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition ${
+                  lessonTab === "exercises"
+                    ? "bg-white text-blue-600 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                2. Proof & Comprehension Exercises ({selectedLesson.exercises?.length || 0})
+              </button>
+            </div>
+          </div>
+
+          {lessonTab === "blackboard" ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 space-y-6">
+                {/* Optional Narrated Video Lecture Player */}
+                {selectedLesson.videoUrl && (
+                  <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-lg">
+                    <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center gap-2 text-xs font-semibold text-sky-400">
+                      <Video className="w-4 h-4" /> Narrated Lecture Episode
+                    </div>
+                    {selectedLesson.videoUrl.includes("youtube.com") ||
+                    selectedLesson.videoUrl.includes("youtu.be") ? (
+                      <iframe
+                        src={selectedLesson.videoUrl}
+                        title={selectedLesson.title}
+                        className="w-full aspect-video"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={selectedLesson.videoUrl}
+                        controls
+                        className="w-full aspect-video bg-black"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Interactive Blackboard Derivation */}
+                <div className="bg-[#0b1528] text-slate-100 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
+                  <div className="p-4 rounded-xl bg-blue-950/60 border border-blue-400/30">
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-sky-300 mb-1">
+                      Formal Theorem Statement
+                    </div>
+                    <div className="text-sm text-white leading-relaxed">
+                      <MathText text={selectedLesson.theorem} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedLesson.steps?.map((step, idx) => {
+                      const isCurrent = idx === activeStepIdx;
+                      const isRevealed = idx <= activeStepIdx;
+                      return (
+                        <button
+                          type="button"
+                          key={idx}
+                          onClick={() => setActiveStepIdx(idx)}
+                          className={`w-full text-left p-4 rounded-xl border transition block ${
+                            isCurrent
+                              ? "bg-slate-900 border-sky-400 shadow-md"
+                              : isRevealed
+                              ? "bg-slate-900/60 border-slate-800 opacity-90"
+                              : "bg-slate-950/40 border-slate-900 opacity-40"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-xs mb-2">
+                            <span className="font-bold text-sky-300">
+                              Step {idx + 1}: <MathText text={step.label} />
+                            </span>
+                            <span className="font-mono text-slate-400">{step.time}</span>
+                          </div>
+                          <div className="my-3 py-2.5 px-4 bg-slate-950 rounded-lg border border-slate-800 text-amber-200 overflow-x-auto">
+                            <MathText text={step.math} block={true} />
+                          </div>
+                          <div className="text-xs text-slate-300 leading-relaxed">
+                            <MathText text={step.caption || step.explanation} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      type="button"
+                      disabled={activeStepIdx === 0}
+                      onClick={() => setActiveStepIdx((i) => Math.max(0, i - 1))}
+                      className="px-4 py-2 rounded-lg bg-slate-800 text-xs font-semibold text-slate-200 disabled:opacity-40"
+                    >
+                      ← Previous Step
+                    </button>
+                    <span className="text-xs font-mono text-slate-400">
+                      Step {activeStepIdx + 1} of {selectedLesson.steps?.length || 1}
+                    </span>
+                    {activeStepIdx < (selectedLesson.steps?.length || 1) - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setActiveStepIdx((i) => i + 1)}
+                        className="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold"
+                      >
+                        Next Proof Step →
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setLessonTab("exercises")}
+                        className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold"
+                      >
+                        Start Exercises →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Proof Outline & Video URL Editor */}
+              <div className="lg:col-span-4 space-y-4">
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+                  <h3 className="text-sm font-bold text-slate-900">Derivation Steps</h3>
+                  {selectedLesson.steps?.map((s, idx) => (
+                    <button
+                      type="button"
+                      key={idx}
+                      onClick={() => setActiveStepIdx(idx)}
+                      className={`w-full text-left p-2.5 rounded-lg text-xs border transition flex items-center justify-between ${
+                        idx === activeStepIdx
+                          ? "bg-blue-50 border-blue-500 text-blue-900 font-bold"
+                          : "bg-slate-50 border-slate-200 text-slate-600"
+                      }`}
+                    >
+                      <span>
+                        {idx + 1}. <MathText text={s.label} />
+                      </span>
+                      <span className="font-mono text-[11px]">{s.time}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ===============================================================
+               EXERCISE ENGINE (Supports 'mcq', 'numeric', and 'proof' types)
+               =============================================================== */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+                {selectedLesson.exercises && selectedLesson.exercises.length > 0 ? (
+                  (() => {
+                    const ex = selectedLesson.exercises[currentExIdx];
+                    const exType = ex.type || "mcq";
+                    const existingStatus = progress.exercises?.[ex.id]?.level;
+
+                    return (
+                      <>
+                        {/* Problem Header & Switcher */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-2">
+                            {selectedLesson.exercises.map((item, idx) => (
+                              <button
+                                type="button"
+                                key={item.id}
+                                onClick={() => {
+                                  setCurrentExIdx(idx);
+                                  resetExerciseInputs();
+                                }}
+                                className={`px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                                  idx === currentExIdx
+                                    ? "bg-[#0b2149] text-white border-[#0b2149]"
+                                    : "bg-slate-100 text-slate-600 border-slate-200"
+                                }`}
+                              >
+                                #{idx + 1} ({item.type === "proof" ? "Proof" : "Concept"})
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {existingStatus && (
+                              <span
+                                className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                                  existingStatus === "mastered"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-amber-100 text-amber-800"
+                                }`}
+                              >
+                                {existingStatus === "mastered" ? "★ Mastered" : "● Familiar"}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setShowScratchpad((s) => !s)}
+                              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5"
+                            >
+                              <PenTool className="w-3.5 h-3.5" />
+                              {showScratchpad ? "Hide Scratchpad" : "Scratchpad"}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Question Prompt */}
+                        <div className="text-base font-medium text-slate-900 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+                          <MathText text={ex.question} />
+                        </div>
+
+                        {/* TYPE 1: MULTIPLE CHOICE (All options are accessible <button> elements with KaTeX) */}
+                        {exType === "mcq" && (
+                          <div className="space-y-2.5">
+                            {ex.options?.map((opt, oIdx) => {
+                              const isSelected = selectedOption === oIdx;
+                              let btnStyle =
+                                "bg-white border-slate-200 text-slate-800 hover:border-blue-400";
+                              if (isSelected) {
+                                btnStyle = "bg-blue-50 border-blue-600 text-blue-950 font-semibold";
+                              }
+                              if (isSubmitted) {
+                                if (oIdx === ex.correctIndex) {
+                                  btnStyle =
+                                    "bg-emerald-50 border-emerald-500 text-emerald-950 font-semibold";
+                                } else if (isSelected) {
+                                  btnStyle = "bg-rose-50 border-rose-500 text-rose-950";
+                                }
+                              }
+                              return (
+                                <button
+                                  type="button"
+                                  key={oIdx}
+                                  onClick={() => {
+                                    setSelectedOption(oIdx);
+                                    if (isSubmitted) setIsSubmitted(false);
+                                  }}
+                                  className={`w-full text-left p-3.5 rounded-xl border-2 text-sm transition flex items-start gap-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${btnStyle}`}
+                                >
+                                  <span className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-xs font-mono font-bold shrink-0 mt-0.5">
+                                    {String.fromCharCode(65 + oIdx)}
+                                  </span>
+                                  <div className="flex-1 space-y-1">
+                                    <MathText text={opt} />
+                                    {isSubmitted &&
+                                      (isSelected || oIdx === ex.correctIndex) &&
+                                      ex.optionExplanations?.[oIdx] && (
+                                        <div className="text-xs text-slate-600 pt-1.5 border-t border-slate-200/80 font-normal">
+                                          <MathText text={ex.optionExplanations[oIdx]} />
+                                        </div>
+                                      )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* TYPE 2: NUMERIC */}
+                        {exType === "numeric" && (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={numericInput}
+                              onChange={(e) => {
+                                setNumericInput(e.target.value);
+                                setIsSubmitted(false);
+                              }}
+                              placeholder="Enter exact numeric value..."
+                              className="w-full max-w-xs px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono focus:outline-none focus:border-blue-600"
+                            />
+                            {isSubmitted && ex.explanation && (
+                              <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700">
+                                <MathText text={ex.explanation} />
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* TYPE 3: RIGOROUS PROOF-WRITING EXERCISE */}
+                        {exType === "proof" && (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                                Write Your Formal Proof (Supports $LaTeX$):
+                              </label>
+                              <textarea
+                                rows={5}
+                                value={proofText}
+                                onChange={(e) => setProofText(e.target.value)}
+                                placeholder="Let G be a group of prime order p, and let a \in G with a \neq 1..."
+                                className="w-full rounded-xl border border-slate-300 p-3.5 text-sm font-mono text-slate-800 focus:outline-none focus:border-blue-600"
+                              />
+                            </div>
+
+                            {proofText.trim() && (
+                              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                                <div className="text-[11px] font-bold uppercase text-slate-400">
+                                  Live Typeset Proof Preview
+                                </div>
+                                <div className="text-sm text-slate-800 leading-relaxed">
+                                  <MathText text={proofText} />
+                                </div>
+                              </div>
+                            )}
+
+                            {isSubmitted && (
+                              <div className="space-y-4 pt-2">
+                                <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+                                  <div className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                                    Model Proof (Vaaler / Artin Standard)
+                                  </div>
+                                  <div className="text-sm text-slate-800 leading-relaxed">
+                                    <MathText text={ex.modelProof} />
+                                  </div>
+                                </div>
+
+                                {ex.rubric && ex.rubric.length > 0 && (
+                                  <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200 space-y-2.5">
+                                    <div className="text-xs font-bold text-blue-900">
+                                      Self-Grading Proof Rubric (Check every step your proof established):
+                                    </div>
+                                    {ex.rubric.map((item, rIdx) => (
+                                      <label
+                                        key={rIdx}
+                                        className="flex items-start gap-2.5 text-xs text-slate-800 cursor-pointer"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={!!checkedRubric[rIdx]}
+                                          onChange={(e) =>
+                                            setCheckedRubric((prev) => ({
+                                              ...prev,
+                                              [rIdx]: e.target.checked
+                                            }))
+                                          }
+                                          className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <MathText text={item} />
+                                      </label>
+                                    ))}
+                                    <div className="pt-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const allChecked = ex.rubric.every(
+                                            (_, idx) => checkedRubric[idx]
+                                          );
+                                          recordExerciseResult(
+                                            ex.id,
+                                            allChecked && hintCount === 0
+                                          );
+                                        }}
+                                        className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
+                                      >
+                                        Save Rubric Grade
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Hints Drawer */}
+                        {hintCount > 0 && ex.hints && (
+                          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+                            <div className="text-xs font-bold text-amber-900">
+                              Progressive Hints ({hintCount}/{ex.hints.length}) — using hints caps credit at Familiar
+                            </div>
+                            {ex.hints.slice(0, hintCount).map((h, i) => (
+                              <div key={i} className="text-xs text-slate-800 leading-relaxed">
+                                {i + 1}. <MathText text={h} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Action Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                          {ex.hints && ex.hints.length > 0 ? (
+                            <button
+                              type="button"
+                              disabled={hintCount >= ex.hints.length}
+                              onClick={() => setHintCount((c) => c + 1)}
+                              className="text-xs font-semibold text-amber-700 hover:text-amber-800 disabled:opacity-40"
+                            >
+                              Get Hint ({ex.hints.length - hintCount} remaining)
+                            </button>
+                          ) : (
+                            <span />
+                          )}
+
+                          <div className="flex items-center gap-3">
+                            {exType === "proof" ? (
+                              !isSubmitted && (
+                                <button
+                                  type="button"
+                                  disabled={!proofText.trim()}
+                                  onClick={() => setIsSubmitted(true)}
+                                  className="px-5 py-2.5 rounded-xl bg-[#0b2149] hover:bg-blue-900 disabled:opacity-40 text-white text-xs font-bold"
+                                >
+                                  Reveal Model Proof & Rubric
+                                </button>
+                              )
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={
+                                  exType === "mcq"
+                                    ? selectedOption === null
+                                    : !numericInput.trim()
+                                }
+                                onClick={() => {
+                                  setIsSubmitted(true);
+                                  const isRight =
+                                    exType === "mcq"
+                                      ? selectedOption === ex.correctIndex
+                                      : String(numericInput).trim() === String(ex.answer).trim();
+                                  if (isRight) {
+                                    const firstTryNoHints =
+                                      wrongAttemptsOnCurrent === 0 && hintCount === 0;
+                                    recordExerciseResult(ex.id, firstTryNoHints);
+                                  } else {
+                                    setWrongAttemptsOnCurrent((w) => w + 1);
+                                  }
+                                }}
+                                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-bold"
+                              >
+                                Check Answer
+                              </button>
+                            )}
+
+                            {currentExIdx < selectedLesson.exercises.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCurrentExIdx((i) => i + 1);
+                                  resetExerciseInputs();
+                                }}
+                                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold"
+                              >
+                                Next Exercise →
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()
+                ) : (
+                  <div className="text-sm text-slate-500">No exercises in this lesson yet.</div>
+                )}
+              </div>
+
+              {/* Scratchpad Column */}
+              <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold text-slate-700">
+                    Diagram & Coset Scratchpad
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {["#1d4ed8", "#dc2626", "#059669", "#0f172a"].map((col) => (
+                      <button
+                        type="button"
+                        key={col}
+                        onClick={() => setPenColor(col)}
+                        className={`w-4 h-4 rounded-full border ${
+                          penColor === col ? "ring-2 ring-offset-1 ring-blue-500" : ""
+                        }`}
+                        style={{ backgroundColor: col }}
+                      />
+                    ))}
+                    <button
+                      type="button"
+                      onClick={clearScratchpad}
+                      className="text-xs text-slate-500 hover:text-slate-900 ml-2 flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Clear
+                    </button>
+                  </div>
+                </div>
+                <canvas
+                  ref={canvasRef}
+                  width={440}
+                  height={360}
+                  onMouseDown={startDraw}
+                  onMouseMove={draw}
+                  onMouseUp={() => setIsDrawing(false)}
+                  onMouseLeave={() => setIsDrawing(false)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl cursor-crosshair"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===================================================================
+          VIEW 4: COURSE STUDIO (Valid Double-Escaped Prompt & Importer)
+         =================================================================== */}
+      {activeView === "studio" && (
+        <div className="max-w-7xl mx-auto w-full px-6 py-8 space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-purple-600">
+                Course Studio Back-End
+              </div>
+              <h1 className="text-2xl font-serif font-bold text-slate-900">
+                Claude Curriculum Importer & GitHub Exporter
+              </h1>
+              <p className="text-xs text-slate-500 mt-1">
+                Uses a strictly validated double-escaped LaTeX JSON schema with video lectures, proof rubrics, and separated learner progress.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setStudioTab("claude")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold ${
+                  studioTab === "claude"
+                    ? "bg-purple-600 text-white"
+                    : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                1. Claude Prompt & JSON Importer
+              </button>
+              <button
+                type="button"
+                onClick={() => setStudioTab("export")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold ${
+                  studioTab === "export"
+                    ? "bg-[#0b2149] text-white"
+                    : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                2. Copy INITIAL_COURSES for GitHub
+              </button>
+            </div>
+          </div>
+
+          {studioTab === "claude" ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-slate-900">
+                    Validated Claude Prompt (Double-Escaped JSON)
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(getClaudePrompt(selectedCourseId));
+                      setCopiedPrompt(true);
+                      setTimeout(() => setCopiedPrompt(false), 2000);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5"
+                  >
+                    {copiedPrompt ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedPrompt ? "Copied!" : "Copy Prompt"}
+                  </button>
+                </div>
+                <pre className="bg-slate-950 text-slate-200 rounded-xl p-3.5 text-[11px] font-mono overflow-x-auto max-h-96">
+                  {getClaudePrompt(selectedCourseId)}
+                </pre>
+              </div>
+
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-slate-900">
+                    Paste Claude's JSON Output
+                  </h2>
+                  <span className="text-xs text-slate-500">
+                    Supports full course or single unit append
+                  </span>
+                </div>
+
+                <textarea
+                  rows={13}
+                  value={jsonInput}
+                  onChange={(e) => setJsonInput(e.target.value)}
+                  placeholder='Paste valid JSON from Claude here...'
+                  className="w-full bg-slate-950 text-emerald-300 rounded-xl p-4 text-xs font-mono focus:outline-none"
+                />
+
+                {importStatus && (
+                  <div
+                    className={`p-3.5 rounded-xl text-xs font-semibold border ${
+                      importStatus.type === "success"
+                        ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                        : "bg-rose-50 border-rose-300 text-rose-900"
+                    }`}
+                  >
+                    {importStatus.msg}
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    disabled={!jsonInput.trim()}
+                    onClick={handleImportJson}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" /> Import JSON into Axiom Academy
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Permanent GitHub / Vercel Export
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Copy this <code className="text-purple-700 font-mono">INITIAL_COURSES</code> block and replace it at the top of <code className="text-purple-700 font-mono">src/App.jsx</code> on GitHub so your live Vercel site updates globally.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const codeBlock = `const INITIAL_COURSES = ${JSON.stringify(courses, null, 2)};`;
+                      navigator.clipboard.writeText(codeBlock);
+                      setCopiedCode(true);
+                      setTimeout(() => setCopiedCode(false), 2500);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#0b2149] hover:bg-blue-900 text-white text-xs font-bold flex items-center gap-2"
+                  >
+                    {copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copiedCode ? "Copied INITIAL_COURSES!" : "Copy INITIAL_COURSES JS Code"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Reset local course cache to INITIAL_COURSES? (Your exercise progress will NOT be erased.)")) {
+                        localStorage.removeItem("axiom_courses_v2");
+                        setCourses(INITIAL_COURSES);
+                      }
+                    }}
+                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold"
+                  >
+                    Reset Course Cache
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
