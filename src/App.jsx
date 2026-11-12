@@ -11,8 +11,8 @@ import {
 // OPTIONAL: Paste your free Supabase URL & Anon Key here so EVERY visitor on
 // your Vercel link automatically connects to the cloud without typing keys!
 // ============================================================================
-const DEFAULT_SUPABASE_URL = ""; 
-const DEFAULT_SUPABASE_ANON_KEY = "";
+const DEFAULT_SUPABASE_URL = "https://msawoptwnzuuicnizhyh.supabase.co"; 
+const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_d1B8vzB0eP96vIjdI8ywCg_um6x7cpQ";
 
 // ============================================================================
 // 1. PURE CONTENT SCHEMA (Vaaler / Artin M 373K Outline + M 367K + M 365C)
